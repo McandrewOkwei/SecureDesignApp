@@ -1,0 +1,32 @@
+﻿@page
+@model FinalProject.Pages.Account.AccountPageModel
+@{
+    ViewData["Title"] = "Account Page";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">Manage or Create an  Ice Creamery Account</h2>
+    <p>
+        <a class="btn btn-primary" asp-page="/Account/Create">Create Account</a>
+    </p>
+    <p>
+        <a class="btn btn-primary" asp-page="/Account/Login">Login</a>
+    </p>
+    <p>
+        <a class="btn btn-primary" asp-page="/Account/Login">Manage Account</a>
+    </p>
+    <div class="row mt-5">
+        <div class="col-md-3">
+            <img src="~/images/IceCream1.jpeg" class="img-fluid rounded" alt="Ice Cream 1">
+        </div>
+        <div class="col-md-3">
+            <img src="~/images/IceCream2.jpeg" class="img-fluid rounded" alt="Ice Cream 2">
+        </div>
+        <div class="col-md-3">
+            <img src="~/images/IceCream3.jpeg" class="img-fluid rounded" alt="Ice Cream 3">
+        </div>
+        <div class="col-md-3">
+            <img src="~/images/IceCream4.jpeg" class="img-fluid rounded" alt="Ice Cream 4">
+        </div>
+    </div>
+</div>

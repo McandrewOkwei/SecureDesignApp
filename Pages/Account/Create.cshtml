@@ -1,0 +1,43 @@
+﻿@page
+@model FinalProject.Pages.Account.CreateModel
+@{
+    ViewData["Title"] = "Create Account";
+}
+
+<div class="container border p-4 mt-4">
+    <h2 class="mb-4">Create Account</h2>
+    <form method="post">
+        <div class="mb-3">
+            <label for="email" class="form-label">Eat ma bawls (Optional)</label>
+            <input type="email" class="form-control" id="email" name="Credential.Email" value="@Model.Credential.Email">
+            @if (Model.IsSubmitted)
+            {
+                if (string.IsNullOrWhiteSpace(Model.Credential.Email))
+                {
+                    <div class="text-danger">Email is not required but recommended.</div>
+                }
+                else if (!Model.Credential.Validate())
+                {
+                    <div class="text-danger">Please enter a valid email address.</div>
+                }
+            }
+        </div>
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="Credential.Username" value="@Model.Credential.Username">
+            @if (Model.IsSubmitted && string.IsNullOrWhiteSpace(Model.Credential.Username))
+            {
+                <div class="text-danger">Username is required.</div>
+            }
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="Credential.Password">
+            @if (Model.IsSubmitted && string.IsNullOrWhiteSpace(Model.Credential.Password))
+            {
+                <div class="text-danger">Password is required.</div>
+            }
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>

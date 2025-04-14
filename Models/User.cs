@@ -15,6 +15,7 @@ namespace FinalProject.Models
         public byte[] UserKey { get; set; }
 
         public string? Email { get; set; } // Nullable email property. They don't need one but is encouraged.
+       
 
         //Give a user a key every time one is created.
         public User() 

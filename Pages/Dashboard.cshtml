@@ -1,0 +1,156 @@
+﻿@page
+@model FinalProject.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Ice Cream Shop Dashboard</h1>
+
+    @if (TempData["StatusMessage"] != null)
+    {
+        var message = TempData["StatusMessage"].ToString();
+        var statusClass = message.Contains("error") || message.Contains("Insufficient") 
+            ? "danger" : "success";
+        <div class="alert alert-@statusClass alert-dismissible fade show" role="alert">
+            @message
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Balance Display Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-wallet me-2"></i>Your Balance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h3>Available Funds</h3>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h2 class="text-success">$@Model.UserBalance.ToString("N2")</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart and Checkout Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-shopping-cart me-2"></i>Your Cart</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.CartItems != null && Model.CartItems.Any())
+                    {
+                        <div class="table-responsive mb-3">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.CartItems)
+                                    {
+                                        <tr>
+                                            <td>@item.ProductName</td>
+                                            <td>$@item.Price.ToString("0.00")</td>
+                                            <td>@item.Quantity</td>
+                                            <td>$@((item.Price * item.Quantity).ToString("0.00"))</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3" class="text-end">Cart Total:</th>
+                                        <th>$@Model.CartTotal.ToString("0.00")</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a asp-page="/Browse" class="btn btn-outline-primary">
+                                    <i class="fas fa-cart-plus me-2"></i>Update Cart
+                                </a>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <form method="post">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-shopping-cart me-2"></i>Complete Purchase
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <p class="mb-3">Your cart is empty</p>
+                            <a asp-page="/Browse" class="btn btn-primary">
+                                <i class="fas fa-cart-plus me-2"></i>Browse Ice Creams
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Shopping</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Browse and purchase delicious ice cream flavors.</p>
+                    <p class="card-text">Oh and if you see a price you don't like, go cry about it. We use quality ingredients over here -_-.</p>
+                    <a asp-page="/Browse" class="btn btn-primary mb-2 me-2">
+                        <i class="fas fa-ice-cream me-2"></i>Browse Ice Cream
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Account Management</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Manage your account settings and balance.</p>
+                    <a asp-page="/AddMoney" class="btn btn-info mb-2 me-2">
+                        <i class="fas fa-money-bill-wave me-2"></i>Add Money
+                    </a>
+                    <a asp-page="/Account/ForgotPassword" class="btn btn-warning mb-2">
+                        <i class="fas fa-key me-2"></i>Forgot Password
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <p><i class="fas fa-info-circle"></i> Welcome to the Ice Cream Shop! From here, you can browse our selection of ice cream, manage your account, and complete purchases.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+}

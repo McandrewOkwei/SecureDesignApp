@@ -1,0 +1,268 @@
+﻿@page
+@model FinalProject.Pages.BrowseModel
+@{
+    ViewData["Title"] = "Browse Ice Creams";
+}
+
+<div style="position: relative;">
+    <!-- Shopping Cart -->
+    <div style="position: absolute; top: 0; right: 0; border: 1px solid #ccc; padding: 10px; width: 300px; background-color: #f8f9fa; box-shadow: 0 0 10px rgba(0,0,0,0.1); border-radius: 5px;">
+        <h4>Your Cart</h4>
+        <ul id="cart" class="list-group">
+            @* Display existing cart items from database *@
+            @if (Model.CartItems != null && Model.CartItems.Any())
+            {
+                foreach (var item in Model.CartItems)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <span>@item.ProductName</span>
+                            <div class="quantity-control ms-2">
+                                <span class="badge bg-primary rounded-pill quantity-badge"
+                                      onclick="toggleQuantityInput(this)"
+                                      data-product="@item.ProductName">
+                                    x@(item.Quantity)
+                                </span>
+                                <div class="quantity-input-container" style="display:none;">
+                                    <input type="number" min="0" max="99" value="@item.Quantity"
+                                           class="form-control form-control-sm quantity-input"
+                                           style="width: 60px;"
+                                           onchange="updateQuantity(this, '@item.ProductName', @item.Price)" />
+                                </div>
+                            </div>
+                        </div>
+                        <span>$@((item.Price * item.Quantity).ToString("0.00"))</span>
+                    </li>
+                }
+            }
+            <!-- New cart items will be added here by JavaScript -->
+        </ul>
+        <div class="mt-3">
+            <strong>Total: $<span id="cartTotal">@Model.CartTotal.ToString("0.00")</span></strong>
+        </div>
+        <div class="mt-3">
+            <form method="post" id="saveCartForm">
+                <input type="hidden" id="cartItemsJson" name="cartItemsJson" />
+                <button type="submit" class="btn btn-success btn-sm w-100" id="saveCartButton" onclick="prepareCartData()">
+                    Update Cart
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ice Cream List -->
+    <div style="margin-right: 320px;">
+        <h2 class="mb-4">Our Ice Creams</h2>
+        @foreach (var iceCream in Model.IceCreams)
+        {
+            <div class="card mb-3" style="max-width: 540px;">
+                <div class="row g-0">
+                    <div class="col-md-4">
+                        <img src="@iceCream.ImagePath" alt="@iceCream.Label" class="img-fluid rounded-start">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body">
+                            <h5 class="card-title">@iceCream.Label</h5>
+                            <p class="card-text"><strong>$@iceCream.Price.ToString("0.00")</strong></p>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addToCart('@iceCream.Label', @iceCream.Price)">
+                                Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .quantity-badge {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+        .quantity-badge:hover {
+            background-color: #0056b3;
+        }
+
+    .quantity-input-container {
+        display: inline-block;
+        margin-left: 5px;
+    }
+
+    .form-control-sm {
+        height: calc(1.5em + 0.5rem + 2px);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+
+<script>
+    // Initialize cart items and total with data from the server
+    let cartItems = [];
+    let cartTotal = @Model.CartTotal;
+
+    // Initialize cart items from server-side data
+    @if (Model.CartItems != null && Model.CartItems.Any())
+    {
+            foreach (var item in Model.CartItems)
+            {
+                    <text>
+                    cartItems.push({
+                        name: @Json.Serialize(item.ProductName),
+                        price: @item.Price,
+                        quantity: @item.Quantity
+                    });
+                    </text>
+            }
+    }
+
+    // Toggle between badge and quantity input
+    function toggleQuantityInput(badge) {
+        const containerLi = badge.closest('li');
+        const quantityBadge = containerLi.querySelector('.quantity-badge');
+        const inputContainer = containerLi.querySelector('.quantity-input-container');
+        const quantityInput = containerLi.querySelector('.quantity-input');
+
+        // Toggle visibility
+        quantityBadge.style.display = 'none';
+        inputContainer.style.display = 'block';
+
+        // Focus on input
+        quantityInput.focus();
+
+        // Add event listener to detect clicking outside
+        document.addEventListener('click', function closeQuantity(e) {
+            if (!containerLi.contains(e.target) || e.target.tagName === 'BUTTON') {
+                quantityBadge.style.display = 'inline-block';
+                inputContainer.style.display = 'none';
+                document.removeEventListener('click', closeQuantity);
+            }
+        });
+    }
+
+    // Update quantity when input changes
+    function updateQuantity(input, productName, price) {
+        const newQuantity = parseInt(input.value);
+        if (isNaN(newQuantity) || newQuantity < 0) {
+            input.value = 0;
+        } else if (newQuantity > 99) {
+            input.value = 99;
+        }
+
+        // Find the item in our array
+        const itemIndex = cartItems.findIndex(item => item.name === productName);
+        if (itemIndex !== -1) {
+            const oldQuantity = cartItems[itemIndex].quantity;
+            const quantityDiff = newQuantity - oldQuantity;
+
+            // Update quantity
+            cartItems[itemIndex].quantity = newQuantity;
+
+            // Update total
+            cartTotal += price * quantityDiff;
+
+            // Update display
+            updateCartDisplay();
+        }
+
+        // Update the badge text as well
+        const containerLi = input.closest('li');
+        const quantityBadge = containerLi.querySelector('.quantity-badge');
+        quantityBadge.textContent = 'x' + newQuantity;
+    }
+
+    // In page function to add items to the cart
+    function addToCart(itemName, price) {
+        // Check if the item already exists in the cart
+        const existingItemIndex = cartItems.findIndex(item => item.name === itemName);
+
+        if (existingItemIndex !== -1) {
+            // Item exists - increment quantity
+            cartItems[existingItemIndex].quantity += 1;
+            cartTotal += price;
+
+            // Update cart display
+            updateCartDisplay();
+        } else {
+            // Add to cart array as new item
+            cartItems.push({name: itemName, price: price, quantity: 1});
+            cartTotal += price;
+
+            // Update the display
+            updateCartDisplay();
+        }
+    }
+
+    // Update the entire cart display
+    function updateCartDisplay() {
+        const cart = document.getElementById('cart');
+        cart.innerHTML = ''; // Clear the cart
+
+        // Re-add all items
+        cartItems.forEach(item => {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+
+            // Item name and quantity
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'd-flex align-items-center';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = item.name;
+            nameDiv.appendChild(nameSpan);
+
+            // Create quantity control container
+            const quantityControl = document.createElement('div');
+            quantityControl.className = 'quantity-control ms-2';
+
+            // Create quantity badge
+            const quantityBadge = document.createElement('span');
+            quantityBadge.className = 'badge bg-primary rounded-pill quantity-badge';
+            quantityBadge.textContent = 'x' + item.quantity;
+            quantityBadge.dataset.product = item.name;
+            quantityBadge.onclick = function() { toggleQuantityInput(this); };
+            quantityControl.appendChild(quantityBadge);
+
+            // Create quantity input container
+            const inputContainer = document.createElement('div');
+            inputContainer.className = 'quantity-input-container';
+            inputContainer.style.display = 'none';
+
+            // Create quantity input
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'number';
+            quantityInput.min = 0;
+            quantityInput.max = 99;
+            quantityInput.value = item.quantity;
+            quantityInput.className = 'form-control form-control-sm quantity-input';
+            quantityInput.style.width = '60px';
+            quantityInput.onchange = function() { updateQuantity(this, item.name, item.price); };
+
+            inputContainer.appendChild(quantityInput);
+            quantityControl.appendChild(inputContainer);
+            nameDiv.appendChild(quantityControl);
+
+            // Item total price
+            const priceSpan = document.createElement('span');
+            priceSpan.textContent = '$' + (item.price * item.quantity).toFixed(2);
+
+            // Add elements to list item
+            listItem.appendChild(nameDiv);
+            listItem.appendChild(priceSpan);
+            cart.appendChild(listItem);
+        });
+
+        // Update the total
+        document.getElementById('cartTotal').textContent = cartTotal.toFixed(2);
+    }
+
+    
+    function prepareCartData() {
+        // Only include items with quantity > 0
+        const itemsToSave = cartItems.filter(item => item.quantity > 0);
+        console.log("Preparing cart data:", itemsToSave);
+        document.getElementById('cartItemsJson').value = JSON.stringify(itemsToSave);
+    }
+
+</script>

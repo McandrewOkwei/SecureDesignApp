@@ -4,7 +4,8 @@ using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace FinalProject.Services.Aes
+
+namespace FinalProject.Services.AES
 {
     public class Encryption
     {

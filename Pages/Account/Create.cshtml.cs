@@ -1,27 +1,40 @@
+using BCrypt.Net;
+using FinalProject.Data;
+using FinalProject.Models;
+using FinalProject.Services.AES;
+using FinalProject.Services.Util;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using FinalProject.Models;
+using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
-using FinalProject.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 namespace FinalProject.Pages.Account
 {
     public class CreateModel : PageModel
     {
         private readonly ApplicationDbContext _context;// Insert ApplicationDbContext here to access the database.
+        private readonly IConfiguration _config;
+        private readonly UserService _userService; // Added UserService for balance encryption
 
         //Required Credential bind here for 2 way data binding between the UI and the backend model.
         [BindProperty]
 
         //Encapsulate all user data inside a Credential Object
-        public Credential Credential { get; set; } = new Credential();
+        public CreateCredential Credential { get; set; } = new CreateCredential();
 
         public bool IsSubmitted { get; set; } = false; // Assume a fresh load of create account the user has not submitted a form yet (don't show text danger until after submission).
 
 
         //Constructor gives the CreateModel access to the database context.
-        public CreateModel(ApplicationDbContext context)
+        public CreateModel(ApplicationDbContext context, IConfiguration config, UserService userService)
         {
             _context = context;
+            _config = config;
+            _userService = userService;
         }
         public void OnGet()
         {
@@ -31,33 +44,63 @@ namespace FinalProject.Pages.Account
         //When a user hits submit, they will be granted an aes key, and credentials will be saved to the database encrypted
 
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPostAsync()
         {
             IsSubmitted = true;
-            // Validate the input
+            
             if (!ModelState.IsValid)
             {
+                return Page();
+            }
+            //If duplicate user, redirect to create an account
+            if (_context.Users.Any(u => u.Username == Credential.Username))
+            {
+                ModelState.AddModelError(Credential.Username, "Username already taken");
                 return Page();
             }
             // Create a new user object
             var newUser = new User
             {
                 Username = Credential.Username,
-                Password = Credential.Password,
+                Password = BCrypt.Net.BCrypt.HashPassword(Credential.Password),
                 Email = Credential.Email
             };
-            // Save the user to the database (pseudo code)
+            //Populate encrypted balance **Before** adding usr to db.
+            await _userService.InitializeUserBalanceAsync(newUser);
+            // Save the user to the database 
             _context.Users.Add(newUser);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+
+
+            var claims = new List<Claim>
+                { 
+                    new Claim(ClaimTypes.Name, newUser.Username),
+                };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authProperties = new AuthenticationProperties
+            {
+                // Configure authentication properties
+                IsPersistent = true, //Persisting auth and expiry of 30 days just for ease of use until project graded.
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+            };
+
+            // Sign in the user using cookies
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
+
             return RedirectToPage("/Index");
         }
 
     }
-    public class Credential
+    public class CreateCredential
     {
-        
+
         [Display(Name = "User Name")]
-        [Required]  
+        [Required]
         public string Username { get; set; }
 
         [DataType(DataType.Password)]
@@ -69,7 +112,7 @@ namespace FinalProject.Pages.Account
 
         public bool Validate()
         {
-            if(!Email.Contains("@") || !Email.Contains(".") || string.IsNullOrWhiteSpace(Email))
+            if (!Email.Contains("@") || !Email.Contains(".") || string.IsNullOrWhiteSpace(Email))
             {
                 return false;
             }

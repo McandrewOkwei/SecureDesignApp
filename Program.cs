@@ -3,6 +3,7 @@ using FinalProject.Services;
 using FinalProject.Services.Util;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Net;
@@ -18,13 +19,15 @@ namespace FinalProject
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 Args = args,
-                // This disables the default URL configuration 
+                // This disables the default URL configuration
                 // so only your Kestrel configuration will be used
                 ApplicationName = typeof(Program).Assembly.FullName,
                 ContentRootPath = Directory.GetCurrentDirectory()
             });
-                
 
+
+            // Antiforgery token persisted storage.
+            builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo("/app/keys"));
 
             if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
             {
@@ -32,12 +35,12 @@ namespace FinalProject
                 // In Docker, use the container certificate path
                 builder.WebHost.ConfigureKestrel(options =>
                 {
-                options.Listen(IPAddress.Any, 80);
+                options.ListenAnyIP(80);
 
                 // Configure HTTPS with explicit certificate in container
                 options.Listen(IPAddress.Any, 443, listenOptions =>
                 {
-                    var certPath = "/app/Cert/drewslab.selfip.com.pfx";
+                    var certPath = "Cert/drewslab.selfip.com.pfx";
                     var certPassword = "1q2w3e4r";
 
 
@@ -50,7 +53,7 @@ namespace FinalProject
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Error loading certificate: {ex.Message}");
+                            Console.WriteLine($"Error loading  TLS DREW certificate: {ex.Message}");
                             // Fall back to development certificate
                             listenOptions.UseHttps();
                         }
@@ -80,10 +83,12 @@ namespace FinalProject
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseMySql(
                 builder.Configuration.GetConnectionString("DefaultConnection"),
-                new MySqlServerVersion(new Version(8, 0, 42)), // MySQL version
+                new MySqlServerVersion(new Version(9, 3, 0)), // MySQL version
                 mySqlOptions => mySqlOptions.EnableRetryOnFailure()
+
     )
 );
+
             // Your existing services
             builder.Services.AddScoped<FinalProject.Services.AES.Encryption>();
             builder.Services.AddScoped<FinalProject.Services.AES.Master>();
@@ -120,8 +125,9 @@ namespace FinalProject
                 options.Cookie.HttpOnly = true;
             });
             builder.Services.AddRazorPages();
+            
             var app = builder.Build();
-
+            
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
@@ -130,16 +136,12 @@ namespace FinalProject
             }
 
             app.UseStaticFiles();
-            if (!string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase))
-            {
-                app.UseHttpsRedirection();
-            }
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-
             app.MapRazorPages();
-
             app.Run();
         }
     }

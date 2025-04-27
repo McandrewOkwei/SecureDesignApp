@@ -1,0 +1,79 @@
+GITHUB LINK:
+https://github.com/McandrewOkwei/SecureDesignApp
+
+
+Introduction
+This web application is built using Razor Pages in .NET 8 and is configured to use MySQL as its database. The application is designed to provide a seamless experience for managing and browsing data, with features such as user authentication, data encryption, and more.
+---
+Database Configuration: ApplicationDbContext with MySQL
+Overview
+The ApplicationDbContext is the central class responsible for interacting with the MySQL database. It is configured to use Entity Framework Core (EF Core) to manage database operations such as querying, saving, and updating data.
+Prerequisites
+1.	MySQL Server: Ensure that MySQL is installed and running on your system.
+2.	Connection String: The connection string for the database is defined in .
+the appsettings.json file under the ConnectionStrings section.
+
+BEFORE THE DATABASE WILL RUN:
+
+1. Must configure connection string and add database using dependency injection to main program.
+2. Must have correct model files (Ex: User.cs, IceCream.cs, CartItem.cs).
+3. Must define onModelCreating (Add column names to code and make sure they are spelled correct in ApplicationDb Context class).
+AND
+Run 'dotnet ef migrations add newColumns'
+Run 'dotnet ef database update'
+^ These commands tell the Donetsdk Entity framework to connect to the database and add columns based on how you specify them in code.
+Models:
+In Razor Pages, models represent the data structure of the application. Based on the open files, the IceCream model is likely defined in Models/IceCream.cs. This model represents the structure of the "Ice Cream" data stored in the database.
+
+Views:
+In Razor Pages, views are .cshtml files that define the UI. The open files suggest the following views:
+1.	Pages/Browse.cshtml: Likely displays a list of ice creams for users to browse.
+2.	Pages/Account/Login.cshtml: Provides a login form for user authentication.
+3.	Pages/Account/Create.cshtml: Allows users to create a new account.
+
+Controllers
+In Razor Pages, the "controller" logic is embedded in the .cshtml.cs files. These files handle the page's behavior and interact with the model and database.
+
+Dependencies:
+My csproj file contains this list of dependencies. So long as they are all installed properly the application should run.
+ropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>b71a0a8f-b2ec-450f-81fc-0b3d69e3859b</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+    <SignAssembly>False</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\Images\IceCream1.jpeg" />
+    <None Include="wwwroot\Images\IceCream2.jpeg" />
+    <None Include="wwwroot\Images\IceCream3.jpeg" />
+    <None Include="wwwroot\Images\IceCream4.jpeg" />
+  </ItemGroup>
+
+TO RUN THE PROJECT:
+
+On Dotnet sdk-
+		run 'dotnet build'
+		run 'dotnet run' inside a terminal where the dotnetsdk is included in environment path variable.
+
+DOCKER BUILD:
+
+Run docker build -t latest.project .
+^^Make sure leave the . at the end of the command. Signal docker that the dockerfile is in current folder.
+
+docker run -d -p 8080:80 -p 8443:443 --name finalproject-container finalproject:latest

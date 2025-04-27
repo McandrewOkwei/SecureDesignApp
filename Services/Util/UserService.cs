@@ -121,7 +121,7 @@ namespace FinalProject.Services.Util
             }
         }
         // Add this new method to your UserService class
-        public async Task InitializeUserBalanceAsync(User usr)
+        public string InitializeUserBalanceAsync(User usr)
         {
             try
             {
@@ -145,7 +145,7 @@ namespace FinalProject.Services.Util
                 usr.EncBalance = Convert.ToBase64String(combinedData);
 
                 // Save changes to the database
-                await _context.SaveChangesAsync();
+                return usr.EncBalance;
             }
             catch (Exception ex)
             {

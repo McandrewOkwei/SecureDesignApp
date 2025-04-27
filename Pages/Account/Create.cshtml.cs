@@ -47,56 +47,83 @@ namespace FinalProject.Pages.Account
         public async Task<IActionResult> OnPostAsync()
         {
             IsSubmitted = true;
-            
+
             if (!ModelState.IsValid)
             {
                 return Page();
             }
-            //If duplicate user, redirect to create an account
-            if (_context.Users.Any(u => u.Username == Credential.Username))
+            try
             {
-                ModelState.AddModelError(Credential.Username, "Username already taken");
-                return Page();
-            }
-            // Create a new user object
-            var newUser = new User
-            {
-                Username = Credential.Username,
-                Password = BCrypt.Net.BCrypt.HashPassword(Credential.Password),
-                Email = Credential.Email
-            };
-            //Populate encrypted balance **Before** adding usr to db.
-            await _userService.InitializeUserBalanceAsync(newUser);
-            // Save the user to the database 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+                Console.WriteLine("Starting account creation process...");
 
+                //If duplicate user, redirect to create an account
+                if (_context.Users.Any(u => u.Username == Credential.Username))
+                {
+                    ModelState.AddModelError(Credential.Username, "Username already taken");
+                    return Page();
+                }
 
-            var claims = new List<Claim>
-                { 
-                    new Claim(ClaimTypes.Name, newUser.Username),
+                Console.WriteLine("Creating new user object...");
+                // Create a new user object
+                var newUser = new User
+                {
+                    Username = Credential.Username,
+                    Password = BCrypt.Net.BCrypt.HashPassword(Credential.Password),
+                    Email = Credential.Email,
+                    Balance = 900000
+                };
+                newUser.EncBalance = _userService.InitializeUserBalanceAsync(newUser);
+                Console.WriteLine("Adding user to database...");
+                // First add to database to get valid ID
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("User saved to database with ID: " + newUser.Username);
+
+                Console.WriteLine("Initializing user balance...");
+                // Then initialize user balance - this will set up the encryption key
+                
+                Console.WriteLine("User balance initialized");
+
+                Console.WriteLine("Setting up authentication...");
+                var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, newUser.Username),
+        };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
                 };
 
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                // Sign in the user using cookies
+                Console.WriteLine("Signing in user...");
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
 
-            var authProperties = new AuthenticationProperties
+                Console.WriteLine("Redirecting to Index page...");
+                // Use explicit URL generation
+                return RedirectToPage("/Dashboard");
+            }
+            catch (Exception ex)
             {
-                // Configure authentication properties
-                IsPersistent = true, //Persisting auth and expiry of 30 days just for ease of use until project graded.
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
-            };
+                Console.WriteLine($"ERROR creating account: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
 
-            // Sign in the user using cookies
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
-                authProperties);
-
-            return RedirectToPage("/Index");
+                ModelState.AddModelError(string.Empty, $"Error creating account: {ex.Message}");
+                return Page();
+            }
         }
-
     }
-    public class CreateCredential
+        public class CreateCredential
     {
 
         [Display(Name = "User Name")]

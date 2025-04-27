@@ -44,11 +44,12 @@ namespace FinalProject.Pages.Account
             {
                 return Page();
             }
-
+            Credential.Username = Credential.Username.Trim();
+            Credential.Password = Credential.Password.Trim();
             try
             {
                 // Find user by username
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == Credential.Username);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == Credential.Username.ToLower());
 
                 if (user == null)
                 {

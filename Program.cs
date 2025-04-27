@@ -41,7 +41,7 @@ namespace FinalProject
                 options.Listen(IPAddress.Any, 443, listenOptions =>
                 {
                     var certPath = "Cert/drewslab.selfip.com.pfx";
-                    var certPassword = "1q2w3e4r";
+                    var certPassword = "your certificate password here";
 
 
                     if (File.Exists(certPath))
